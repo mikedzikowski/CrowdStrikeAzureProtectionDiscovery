@@ -79,13 +79,28 @@ foreach ($subscription in $subscriptions) {
         }
     }
 
+    # Get Virtual Machine Scale Sets
+    Write-Host "Finding Virtual Machine Scale Sets..." -ForegroundColor Cyan
+    $vmss = Invoke-AzCommand -Command "az vmss list --query '[].{Name:name, ResourceGroup:resourceGroup}' -o json" -ErrorMessage "Error retrieving VM Scale Sets"
+    if ($vmss) {
+        foreach ($scaleSet in $vmss) {
+            $results += [PSCustomObject]@{
+                ResourceType = "Virtual Machine Scale Set"
+                ResourceName = $scaleSet.Name
+                ResourceGroup = $scaleSet.ResourceGroup
+                Subscription = $subscription.Name
+                ProtectionCapabilities = "EDR, CSPM, CIEM"
+            }
+        }
+    }
+
     # Get AKS Clusters
     Write-Host "Finding AKS Clusters..." -ForegroundColor Cyan
     $aksClusters = Invoke-AzCommand -Command "az aks list --query '[].{Name:name, ResourceGroup:resourceGroup}' -o json" -ErrorMessage "Error retrieving AKS clusters"
     if ($aksClusters) {
         foreach ($cluster in $aksClusters) {
             $results += [PSCustomObject]@{
-                ResourceType = "AKS Cluster"
+                ResourceType = "Kubernetes"
                 ResourceName = $cluster.Name
                 ResourceGroup = $cluster.ResourceGroup
                 Subscription = $subscription.Name
@@ -474,6 +489,144 @@ foreach ($subscription in $subscriptions) {
             }
         }
     }
+
+    # Get Azure Arc servers
+    Write-Host "Finding Azure Arc Servers..." -ForegroundColor Cyan
+    $arcServers = Invoke-AzCommand -Command "az connectedmachine list --query '[].{Name:name, ResourceGroup:resourceGroup}' -o json" -ErrorMessage "Error retrieving Azure Arc servers"
+    if ($arcServers) {
+        foreach ($server in $arcServers) {
+            $results += [PSCustomObject]@{
+                ResourceType = "Azure Arc"
+                ResourceName = $server.Name
+                ResourceGroup = $server.ResourceGroup
+                Subscription = $subscription.Name
+                ProtectionCapabilities = "EDR, CSPM, CIEM"
+            }
+        }
+    }
+
+    # Get Azure Machine Learning workspaces
+    Write-Host "Finding Azure Machine Learning Workspaces..." -ForegroundColor Cyan
+    $mlWorkspaces = Invoke-AzCommand -Command "az ml workspace list --query '[].{Name:name, ResourceGroup:resourceGroup}' -o json" -ErrorMessage "Error retrieving Machine Learning workspaces"
+    if ($mlWorkspaces) {
+        foreach ($workspace in $mlWorkspaces) {
+            $results += [PSCustomObject]@{
+                ResourceType = "Azure Machine Learning"
+                ResourceName = $workspace.Name
+                ResourceGroup = $workspace.ResourceGroup
+                Subscription = $subscription.Name
+                ProtectionCapabilities = "CSPM"
+            }
+        }
+    }
+
+    # Get CDN profiles
+    Write-Host "Finding CDN Profiles..." -ForegroundColor Cyan
+    $cdnProfiles = Invoke-AzCommand -Command "az cdn profile list --query '[].{Name:name, ResourceGroup:resourceGroup}' -o json" -ErrorMessage "Error retrieving CDN profiles"
+    if ($cdnProfiles) {
+        foreach ($profile in $cdnProfiles) {
+            $results += [PSCustomObject]@{
+                ResourceType = "CDN"
+                ResourceName = $profile.Name
+                ResourceGroup = $profile.ResourceGroup
+                Subscription = $subscription.Name
+                ProtectionCapabilities = "CSPM"
+            }
+        }
+    }
+
+    # Get Defender for Cloud
+    Write-Host "Finding Defender for Cloud..." -ForegroundColor Cyan
+    try {
+        $defenderStatus = Invoke-AzCommand -Command "az security auto-provisioning-setting list --query '[0].{Name:name}' -o json" -ErrorMessage "Error retrieving Defender for Cloud status"
+        if ($defenderStatus) {
+            $results += [PSCustomObject]@{
+                ResourceType = "Defender for Cloud"
+                ResourceName = "Defender for Cloud"
+                ResourceGroup = ""
+                Subscription = $subscription.Name
+                ProtectionCapabilities = "CSPM"
+            }
+        }
+    }
+    catch {
+        Write-Host "Defender for Cloud may not be configured: $_" -ForegroundColor Yellow
+    }
+
+    # Get Disks
+    Write-Host "Finding Disks..." -ForegroundColor Cyan
+    $disks = Invoke-AzCommand -Command "az disk list --query '[].{Name:name, ResourceGroup:resourceGroup}' -o json" -ErrorMessage "Error retrieving disks"
+    if ($disks) {
+        foreach ($disk in $disks) {
+            $results += [PSCustomObject]@{
+                ResourceType = "Disk"
+                ResourceName = $disk.Name
+                ResourceGroup = $disk.ResourceGroup
+                Subscription = $subscription.Name
+                ProtectionCapabilities = "CSPM"
+            }
+        }
+    }
+
+    # Get DNS zones
+    Write-Host "Finding DNS Zones..." -ForegroundColor Cyan
+    $dnsZones = Invoke-AzCommand -Command "az network dns zone list --query '[].{Name:name, ResourceGroup:resourceGroup}' -o json" -ErrorMessage "Error retrieving DNS zones"
+    if ($dnsZones) {
+        foreach ($zone in $dnsZones) {
+            $results += [PSCustomObject]@{
+                ResourceType = "DNS"
+                ResourceName = $zone.Name
+                ResourceGroup = $zone.ResourceGroup
+                Subscription = $subscription.Name
+                ProtectionCapabilities = "CSPM"
+            }
+        }
+    }
+
+    # Get Monitor components (Log Analytics workspaces)
+    Write-Host "Finding Monitor Components (Log Analytics)..." -ForegroundColor Cyan
+    $logAnalytics = Invoke-AzCommand -Command "az monitor log-analytics workspace list --query '[].{Name:name, ResourceGroup:resourceGroup}' -o json" -ErrorMessage "Error retrieving Log Analytics workspaces"
+    if ($logAnalytics) {
+        foreach ($workspace in $logAnalytics) {
+            $results += [PSCustomObject]@{
+                ResourceType = "Monitor"
+                ResourceName = $workspace.Name
+                ResourceGroup = $workspace.ResourceGroup
+                Subscription = $subscription.Name
+                ProtectionCapabilities = "CSPM"
+            }
+        }
+    }
+
+    # Get Spring Cloud services
+    Write-Host "Finding Spring Cloud Services..." -ForegroundColor Cyan
+    $springCloud = Invoke-AzCommand -Command "az spring-cloud list --query '[].{Name:name, ResourceGroup:resourceGroup}' -o json" -ErrorMessage "Error retrieving Spring Cloud services"
+    if ($springCloud) {
+        foreach ($service in $springCloud) {
+            $results += [PSCustomObject]@{
+                ResourceType = "Spring Cloud"
+                ResourceName = $service.Name
+                ResourceGroup = $service.ResourceGroup
+                Subscription = $subscription.Name
+                ProtectionCapabilities = "CSPM"
+            }
+        }
+    }
+
+    # Get Identity resources (AAD Domain Services)
+    Write-Host "Finding AAD Domain Services..." -ForegroundColor Cyan
+    $aadDS = Invoke-AzCommand -Command "az resource list --resource-type Microsoft.AAD/domainServices --query '[].{Name:name, ResourceGroup:resourceGroup}' -o json" -ErrorMessage "Error retrieving AAD Domain Services"
+    if ($aadDS) {
+        foreach ($ds in $aadDS) {
+            $results += [PSCustomObject]@{
+                ResourceType = "AD Domain Services"
+                ResourceName = $ds.Name
+                ResourceGroup = $ds.ResourceGroup
+                Subscription = $subscription.Name
+                ProtectionCapabilities = "CSPM, CIEM, SSPM"
+            }
+        }
+    }
 }
 
 # Display results
@@ -503,4 +656,10 @@ else {
 
     Write-Host "`nProtection Coverage Summary:" -ForegroundColor Green
     $protectionSummary.GetEnumerator() | Sort-Object Name | Format-Table @{Label="Protection Type"; Expression={$_.Key}}, @{Label="Resources Covered"; Expression={$_.Value}} -AutoSize
+
+    # Resource type summary
+    $resourceTypeSummary = $results | Group-Object -Property ResourceType | Select-Object Name, Count | Sort-Object -Property Name
+    
+    Write-Host "`nResource Type Summary:" -ForegroundColor Green
+    $resourceTypeSummary | Format-Table -AutoSize
 }
