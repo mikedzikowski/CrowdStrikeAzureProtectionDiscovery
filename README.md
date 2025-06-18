@@ -1,5 +1,5 @@
 # CrowdStrikeAzureProtectionDiscovery
-PowerShell script that will crawl a given subscription and output what protection would be provided by the CrowdStrike platform
+PowerShell script that will crawl all subscriptions in a tenant and output what protection would be provided by the CrowdStrike platform
 
 ## Example Output
 
